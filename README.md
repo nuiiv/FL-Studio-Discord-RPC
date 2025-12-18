@@ -43,6 +43,14 @@ All settings are stored in `config.json` in the project folder. Example:
 }
 ```
 
+## Alternative Automatic RPC (DLL Proxy Method)
+
+If you prefer not to run the tracker separately, you can enable Discord RPC automatically using the **`version.dll` proxy**:
+
+1. **Download** the `version.dll` proxy file from the [releases page](https://github.com/nuiiv/FL-Studio-Discord-RPC/releases).  
+2. **Copy** the `version.dll` file into the **same folder as `fl64.exe`** (FL Studio's main executable).  
+3. **Launch FL Studio** normally. Discord RPC will automatically start and display your project details in real-time.
+
 > [!IMPORTANT]
 >
 > This tool **reads memory from a running FL Studio process**.  
