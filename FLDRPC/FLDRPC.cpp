@@ -32,22 +32,38 @@ struct Config {
 Config g_config;
 
 bool LoadConfig(const std::string& path, Config& cfg) {
+    cfg.discordAppId = "1451215754035855514";
+    cfg.largeImageKey = "flstudio";
+    cfg.refreshInterval = 2;
+    cfg.defaultProjectName = "Untitled";
+    cfg.playingImageKey = "play";
+    cfg.stoppedImageKey = "stop";
+    cfg.presenceDetails = "Project: {Project} | BPM: {BPM} | Pitch: {Pitch} | Metronome: {Metronome} | Mode: {Mode}";
+    cfg.presenceState = "Playback: {Status}";
+
     std::ifstream file(path);
-    if (!file.is_open()) return false;
+    if (!file.is_open()) {
+        return false;
+    }
 
-    json j;
-    file >> j;
+    try {
+        json j;
+        file >> j;
 
-    cfg.discordAppId = j.value("discordAppId", "1451215754035855514");
-    cfg.largeImageKey = j.value("largeImageKey", "flstudio");
-    cfg.refreshInterval = j.value("refreshInterval", 2);
-    cfg.defaultProjectName = j.value("defaultProjectName", "Untitled");
-    cfg.playingImageKey = j.value("playingImageKey", "play");
-    cfg.stoppedImageKey = j.value("stoppedImageKey", "stop");
+        cfg.discordAppId = j.value("discordAppId", cfg.discordAppId);
+        cfg.largeImageKey = j.value("largeImageKey", cfg.largeImageKey);
+        cfg.refreshInterval = j.value("refreshInterval", cfg.refreshInterval);
+        cfg.defaultProjectName = j.value("defaultProjectName", cfg.defaultProjectName);
+        cfg.playingImageKey = j.value("playingImageKey", cfg.playingImageKey);
+        cfg.stoppedImageKey = j.value("stoppedImageKey", cfg.stoppedImageKey);
 
-    if (j.contains("presence")) {
-        cfg.presenceDetails = j["presence"].value("details", "");
-        cfg.presenceState = j["presence"].value("state", "");
+        if (j.contains("presence")) {
+            cfg.presenceDetails = j["presence"].value("details", cfg.presenceDetails);
+            cfg.presenceState = j["presence"].value("state", cfg.presenceState);
+        }
+    }
+    catch (...) {
+        std::cout << "JSON format error, using defaults.\n";
     }
 
     return true;
