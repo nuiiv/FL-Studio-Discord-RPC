@@ -82,7 +82,7 @@ enum DataType {
 
 struct Pattern {
     std::string name;
-    const char* signature;
+	std::vector<const char*> signatures; // take into consideration older and newer versions
     int ripOffset;
     int postOffset;
     DataType type;
@@ -117,11 +117,16 @@ struct MemHandle {
 };
 
 std::vector<Pattern> PatternList = {
-    { "Current BPM", "F3 0F 11 05 ? ? ? ? F3 0F 2A 05 ? ? ? ?", 4, 0, TYPE_FLOAT },
-    { "Pattern/Song Toggle", "48 8B 05 ? ? ? ? 83 38 ? 75 ? E8 ? ? ? ? 48 8D 88 48 1C 02 00", 3, 0, TYPE_POINTER_TO_INT },
-    { "Master Pitch", "48 8B 05 ? ? ? ? 48 0F B7 00 66 89 85 08 02 00 00", 3, 0, TYPE_POINTER_TO_SHORT },
-    { "Metronome Toggle", "48 8B 0D ? ? ? ? 48 0F B6 09 88 88 88 09 00 00", 3, 0, TYPE_POINTER_TO_BYTE },
-    { "Playing Status", "83 3D ? ? ? ? ? 74 ? 83 3D ? ? ? ? ? 7F", 2, 0, TYPE_BYTE }
+    { "Current BPM", {"F3 0F 11 05 ? ? ? ? F3 0F 2A 05 ? ? ? ?"}, 4, 0, TYPE_FLOAT },
+    { "Pattern/Song Toggle", {"48 8B 05 ? ? ? ? 83 38 ? 75 ? E8 ? ? ? ? 48 8D 88 48 1C 02 00"}, 3, 0, TYPE_POINTER_TO_INT },
+    { "Master Pitch",
+        {
+            "48 8B 05 ? ? ? ? 48 0F B7 00 66 89 85 08 02 00 00",
+            "48 8B 05 ? ? ? ? 48 8B 8D 40 0B 00 00 48 8B 89 C0 44 00 00 48 0F BF 89 2C 00 10 00" // 25.2.2.5154
+        }, 3, 0, TYPE_POINTER_TO_SHORT
+    },
+    { "Metronome Toggle", {"48 8B 0D ? ? ? ? 48 0F B6 09 88 88 88 09 00 00"}, 3, 0, TYPE_POINTER_TO_BYTE },
+    { "Playing Status", {"83 3D ? ? ? ? ? 74 ? 83 3D ? ? ? ? ? 7F"}, 2, 0, TYPE_BYTE }
 };
 
 DWORD GetProcId(const wchar_t* name) {
@@ -321,7 +326,13 @@ int main() {
 
     while (true) {
         for (const auto& p : PatternList) {
-            uintptr_t hit = FindPattern(hProc, modBase, modSize, p.signature);
+            uintptr_t hit = 0;
+
+            for (const char* sig : p.signatures) {
+                hit = FindPattern(hProc, modBase, modSize, sig);
+                if (hit) break;
+            }
+
             if (!hit) continue;
 
             MemHandle ptr{ hProc, hit };
@@ -331,42 +342,55 @@ int main() {
             if (!printedPatterns[p.name]) {
                 std::cout << "[Memory] Pattern: " << p.name
                     << " | Address: 0x" << std::hex << resolved.addr
-                    << " | Module+Offset: 0x" << std::hex << (resolved.addr - modBase) << std::dec << "\n";
+                    << " | Module+Offset: 0x" << (resolved.addr - modBase) << std::dec << "\n";
                 printedPatterns[p.name] = true;
             }
 
-            if (p.type == TYPE_FLOAT) g_bpm = resolved.as<float>();
-            else if (p.type == TYPE_INT) g_playState = (resolved.as<int>() == 1) ? "Playing" : "Stopped";
+            if (p.type == TYPE_FLOAT) {
+                g_bpm = resolved.as<float>();
+            }
+            else if (p.type == TYPE_INT) {
+                g_playState = (resolved.as<int>() == 1) ? "Playing" : "Stopped";
+            }
             else if (p.type == TYPE_POINTER_TO_INT) {
                 auto ptrVal = resolved.as_ptr<int>();
                 if (ptrVal) {
                     int v{};
-                    ReadProcessMemory(hProc, ptrVal, &v, sizeof(v), nullptr);
-                    g_songMode = (v == 1);
+                    if (ReadProcessMemory(hProc, ptrVal, &v, sizeof(v), nullptr))
+                        g_songMode = (v == 1);
                 }
             }
             else if (p.type == TYPE_POINTER_TO_SHORT) {
                 auto ptrVal = resolved.as_ptr<int16_t>();
-                int16_t raw{};
-                ReadProcessMemory(hProc, ptrVal, &raw, sizeof(raw), nullptr);
-                g_masterPitch = static_cast<int>(raw);
+                if (ptrVal) {
+                    int16_t raw{};
+                    if (ReadProcessMemory(hProc, ptrVal, &raw, sizeof(raw), nullptr))
+                        g_masterPitch = static_cast<int>(raw);
+                }
             }
             else if (p.type == TYPE_POINTER_TO_BYTE) {
                 auto ptrVal = resolved.as_ptr<unsigned char>();
-                unsigned char v{};
-                ReadProcessMemory(hProc, ptrVal, &v, sizeof(v), nullptr);
-                g_metronome = (v != 0);
+                if (ptrVal) {
+                    unsigned char v{};
+                    if (ReadProcessMemory(hProc, ptrVal, &v, sizeof(v), nullptr))
+                        g_metronome = (v != 0);
+                }
             }
-            else if (p.type == TYPE_BYTE) g_playState = (resolved.as<uint8_t>() == 1) ? "Playing" : "Stopped";
+            else if (p.type == TYPE_BYTE) {
+                g_playState = (resolved.as<uint8_t>() == 1) ? "Playing" : "Stopped";
+            }
         }
 
         g_projectName = GetFLStudioProjectName();
 
         UpdateDiscordRPC();
         Discord_RunCallbacks();
+
         std::this_thread::sleep_for(std::chrono::seconds(g_config.refreshInterval));
 
-        if (!GetProcId(PROCESS_NAME)) break;
+        if (GetProcId(PROCESS_NAME) == 0) {
+            break;
+        }
     }
 
     ShutdownDiscordRPC();

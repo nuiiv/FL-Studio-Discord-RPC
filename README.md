@@ -11,10 +11,18 @@ The tracker works by reading FL Studio's memory in real-time to extract informat
 - **Discord RPC Update:** Updates your Discord profile with the current project details according to the template in `config.json`.  
 - **Customizable Display:** Use placeholders (`{Project}`, `{BPM}`, `{Pitch}`, `{Metronome}`, `{Mode}`, `{Status}`) for dynamic, real-time presence information.  
 
-## Supported Version
+## Supported Versions
 
-This tool has been **tested on FL Studio version 24.2.2 build 4597 and version 24.2.1 build 4526 (Should still work on similar versions due to AOB scanning)**.  
-It may **not work properly on other versions**. If you encounter issues with other versions, feel free to **create an issue** in this repository.
+This tool utilizes **AOB (Array of Bytes) scanning**, allowing it to dynamically locate memory addresses even after minor software updates. It has been officially tested and verified on the following versions of FL Studio:
+
+| FL Studio Version | Build Number | Status |
+| :--- | :--- | :--- |
+| **24.2.1** | 4526 | ✅ Confirmed |
+| **24.2.2** | 4597 | ✅ Confirmed |
+| **25.2.2** | 5154 | ✅ Confirmed |
+
+> [!IMPORTANT]
+> While the tool is designed to be version-independent, internal memory structures can change. If you encounter issues or incorrect data with a specific build, please **[create an issue](https://github.com/nuiiv/FL-Studio-Discord-RPC/issues)** in this repository.
 
 ## Configuration
 
