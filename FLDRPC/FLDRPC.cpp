@@ -9,6 +9,7 @@
 #include <fstream>
 #include "./external/json/json.hpp"
 #include <winver.h>
+#include <unordered_map>
 
 #pragma comment(lib, "Version.lib")
 #include "./external/discord_rpc/include/discord_rpc.h"
@@ -226,6 +227,7 @@ int g_masterPitch;
 bool g_metronome;
 bool g_songMode;
 int64_t g_startTimestamp;
+std::string g_flVersion;
 
 // ---------------------- Helpers ----------------------
 std::string ReplacePlaceholders(const std::string& text) {
@@ -266,6 +268,7 @@ void UpdateDiscordRPC() {
     DiscordRichPresence rpc{};
     rpc.startTimestamp = g_startTimestamp;
     rpc.largeImageKey = g_config.largeImageKey.c_str();
+    rpc.largeImageText = g_flVersion.c_str();
     rpc.details = detailsStr.c_str();
     rpc.state = stateStr.c_str();
     rpc.smallImageKey = (g_playState == "Playing") ? g_config.playingImageKey.c_str() : g_config.stoppedImageKey.c_str();
@@ -293,7 +296,12 @@ int main() {
         << L" (Version: " << GetProcessProductVersion(pid) << L") ---\n\n";
 
     g_projectName = GetFLStudioProjectName();
+    std::wstring wVer = GetProcessProductVersion(pid);
+    std::string version(wVer.begin(), wVer.end());
+    g_flVersion = "FL Studio v" + version;
     InitDiscordRPC();
+
+    std::unordered_map<std::string, bool> printedPatterns;
 
     while (true) {
         for (const auto& p : PatternList) {
@@ -304,13 +312,22 @@ int main() {
             int instrLen = (p.name == "Playing Status") ? 7 : 6;
             MemHandle resolved = ptr.add(p.ripOffset).rip(instrLen);
 
+            if (!printedPatterns[p.name]) {
+                std::cout << "[Memory] Pattern: " << p.name
+                    << " | Address: 0x" << std::hex << resolved.addr
+                    << " | Module+Offset: 0x" << std::hex << (resolved.addr - modBase) << std::dec << "\n";
+                printedPatterns[p.name] = true;
+            }
+
             if (p.type == TYPE_FLOAT) g_bpm = resolved.as<float>();
             else if (p.type == TYPE_INT) g_playState = (resolved.as<int>() == 1) ? "Playing" : "Stopped";
             else if (p.type == TYPE_POINTER_TO_INT) {
                 auto ptrVal = resolved.as_ptr<int>();
-                int v{};
-                ReadProcessMemory(hProc, ptrVal, &v, sizeof(v), nullptr);
-                g_songMode = (v == 1);
+                if (ptrVal) {
+                    int v{};
+                    ReadProcessMemory(hProc, ptrVal, &v, sizeof(v), nullptr);
+                    g_songMode = (v == 1);
+                }
             }
             else if (p.type == TYPE_POINTER_TO_SHORT) {
                 auto ptrVal = resolved.as_ptr<int16_t>();

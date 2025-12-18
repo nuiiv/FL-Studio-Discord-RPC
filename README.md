@@ -13,7 +13,7 @@ The tracker works by reading FL Studio's memory in real-time to extract informat
 
 ## Supported Version
 
-This tool has been **tested only on FL Studio version 24.2.2 build 4597**.  
+This tool has been **tested on FL Studio version 24.2.2 build 4597 and version 24.2.1 build 4526 (Should still work on similar versions due to AOB scanning)**.  
 It may **not work properly on other versions**. If you encounter issues with other versions, feel free to **create an issue** in this repository.
 
 ## Configuration
