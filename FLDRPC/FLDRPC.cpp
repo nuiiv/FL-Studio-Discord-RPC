@@ -307,11 +307,25 @@ int main() {
     const wchar_t* MODULE_NAME = L"FLEngine_x64.dll";
 
     DWORD pid = GetProcId(PROCESS_NAME);
-    if (!pid) { std::cout << "Process not found\n"; return 1; }
+    if (!pid) {
+        std::cout << "Error: FL Studio (FL64.exe) not found. Please open FL Studio first.\n";
+        system("pause");
+        return 1;
+    }
 
     HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+    if (!hProc) {
+        std::cout << "Error: Could not open process. Try running as Administrator.\n";
+        system("pause");
+        return 1;
+    }
     DWORD modSize = 0;
     uintptr_t modBase = GetModuleBase(pid, MODULE_NAME, modSize);
+    if (!modBase) {
+        std::cout << "Error: Could not find FLEngine_x64.dll.\n";
+        system("pause");
+        return 1;
+    }
 
     std::wcout << L"--- Target: " << PROCESS_NAME
         << L" (Version: " << GetProcessProductVersion(pid) << L") ---\n\n";
@@ -323,6 +337,7 @@ int main() {
     InitDiscordRPC();
 
     std::unordered_map<std::string, bool> printedPatterns;
+    bool initialCheckDone = false;
 
     while (true) {
         for (const auto& p : PatternList) {
@@ -380,6 +395,15 @@ int main() {
                 g_playState = (resolved.as<uint8_t>() == 1) ? "Playing" : "Stopped";
             }
         }
+
+        if (!initialCheckDone) {
+			for (const auto& p : PatternList) {
+                if (printedPatterns.find(p.name) == printedPatterns.end()) {
+                    std::cout << "WARNING: Pattern '" << p.name << "' was not found. Some features may not work.\n";
+                }
+            }
+			initialCheckDone = true;
+		}
 
         g_projectName = GetFLStudioProjectName();
 
