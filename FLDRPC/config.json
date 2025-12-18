@@ -1,0 +1,12 @@
+{
+  "discordAppId": "1451215754035855514",
+  "largeImageKey": "flstudio",
+  "refreshInterval": 2,
+  "defaultProjectName": "Untitled",
+  "playingImageKey": "play",
+  "stoppedImageKey": "stop",
+  "presence": {
+    "details": "Project: {Project} | BPM: {BPM} | Pitch: {Pitch} | Metronome: {Metronome} | Mode: {Mode}",
+    "state": "Playback: {Status}"
+  }
+}

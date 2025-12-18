@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="FLDRPC/FLDRPC.vcxproj" Id="b6950b9c-29e9-4972-ac1d-6b67336e92d5" />
+</Solution>

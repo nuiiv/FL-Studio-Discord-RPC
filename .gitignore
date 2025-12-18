@@ -1,0 +1,39 @@
+# Visual Studio
+.vs/
+*.vcxproj.user
+*.suo
+*.user
+*.ncb
+*.opensdf
+*.sdf
+*.ipch
+*.aps
+*.pch
+*.idb
+*.pdb
+*.ilk
+*.log
+*.tlog
+*.lastbuildstate
+
+# Build folders
+Debug/
+Release/
+x64/
+x86/
+bin/
+obj/
+out/
+
+# Visual Studio Code
+.vscode/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
