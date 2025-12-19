@@ -80,12 +80,17 @@ enum DataType {
     TYPE_POINTER_TO_BYTE
 };
 
+struct Signature {
+	const char* pattern;
+	int ripOffset;
+	int instrLen;
+	int postOffset;
+	DataType type;
+};
+
 struct Pattern {
     std::string name;
-	std::vector<const char*> signatures; // take into consideration older and newer versions
-    int ripOffset;
-    int postOffset;
-    DataType type;
+	std::vector<Signature> signatures; // take into consideration older and newer versions
 };
 
 struct MemHandle {
@@ -117,16 +122,59 @@ struct MemHandle {
 };
 
 std::vector<Pattern> PatternList = {
-    { "Current BPM", {"F3 0F 11 05 ? ? ? ? F3 0F 2A 05 ? ? ? ?"}, 4, 0, TYPE_FLOAT },
-    { "Pattern/Song Toggle", {"48 8B 05 ? ? ? ? 83 38 ? 75 ? E8 ? ? ? ? 48 8D 88 48 1C 02 00"}, 3, 0, TYPE_POINTER_TO_INT },
-    { "Master Pitch",
+    {
+        "Current BPM",
         {
-            "48 8B 05 ? ? ? ? 48 0F B7 00 66 89 85 08 02 00 00",
-            "48 8B 05 ? ? ? ? 48 8B 8D 40 0B 00 00 48 8B 89 C0 44 00 00 48 0F BF 89 2C 00 10 00" // 25.2.2.5154
-        }, 3, 0, TYPE_POINTER_TO_SHORT
+            { "F3 0F 11 05 ? ? ? ? F3 0F 2A 05 ? ? ? ?", 4, 6, 0, TYPE_FLOAT } // looks to be the same for every version
+        }
     },
-    { "Metronome Toggle", {"48 8B 0D ? ? ? ? 48 0F B6 09 88 88 88 09 00 00"}, 3, 0, TYPE_POINTER_TO_BYTE },
-    { "Playing Status", {"83 3D ? ? ? ? ? 74 ? 83 3D ? ? ? ? ? 7F"}, 2, 0, TYPE_BYTE }
+{
+        "Pattern/Song Toggle",
+        {
+            { "48 8B 05 ? ? ? ? 83 38 ? 75 ? 48 8D 8D 90 02 00 00", 3, 6, 0, TYPE_POINTER_TO_INT }, // 24.1.2.4430
+            { "48 8B 05 ? ? ? ? 83 38 ? 75 ? E8 ? ? ? ? 48 8D 88 48 1C 02 00", 3, 6, 0, TYPE_POINTER_TO_INT },
+
+            { "48 8B 05 ? ? ? ? 83 38 ? 0F 85 ? ? ? ? B1 ?", 3, 6, 0, TYPE_POINTER_TO_INT }, // 20.6.2.1549
+        }
+    },
+{
+        "Master Pitch",
+        {
+            { "48 8B 05 ? ? ? ? 03 18 48 8B 4D 20", 3, 6, 0, TYPE_POINTER_TO_SHORT },
+            { "48 8B 05 ? ? ? ? F3 0F 2A 00 48 8B 45 20", 3, 6, 0, TYPE_POINTER_TO_SHORT },
+            { "48 8B 05 ? ? ? ? 8B 8D B8 05 00 00 89 08 33 C0", 3, 6, 0, TYPE_POINTER_TO_SHORT },
+            { "48 8B 05 ? ? ? ? 8B 00 89 85 B8 05 00 00 8B 85 C0 05 00 00 A9 ? ? ? ? 74 ? 48 8B 8D 90 03 00 00", 3, 6, 0, TYPE_POINTER_TO_SHORT },
+
+            { "48 8B 05 ? ? ? ? 48 0F B7 00 66 89 85 08 02 00 00", 3, 6, 0, TYPE_POINTER_TO_SHORT }, // 24.2.2.4597
+            { "48 8B 05 ? ? ? ? 48 8B 8D 40 0B 00 00 48 8B 89 C0 44 00 00 48 0F BF 89 2C 00 10 00", 3, 6, 0, TYPE_POINTER_TO_SHORT }, // 25.2.2.5154
+			{ "48 8B 05 ? ? ? ? 48 0F B7 00 66 89 85 D8 04 00 00", 3, 6, 0, TYPE_POINTER_TO_SHORT }, // 21.0.3.3517
+            { "48 8B 05 ? ? ? ? 48 8B 8D 90 09 00 00 48 8B 89 00 04 00 00 48 0F BF 89 2C 00 10 00", 3, 6, 0, TYPE_POINTER_TO_SHORT }, // 21.1.1.3750
+            { "48 8B 05 ? ? ? ? 48 8B 8D C0 09 00 00 48 8B 89 20 48 00 00 48 0F BF 89 2C 00 10 00", 3, 6, 0, TYPE_POINTER_TO_SHORT }, // 24.1.2.4430
+            { "48 8B 05 ? ? ? ? 48 8B 8D 50 0B 00 00 48 8B 89 50 48 00 00 48 0F BF 89 2C 00 10 00", 3, 6, 0, TYPE_POINTER_TO_SHORT }, // 25.1.1.4879
+            { "48 8B 05 ? ? ? ? 48 8B 8D 40 0B 00 00 48 8B 89 40 48 00 00 48 0F BF 89 2C 00 10 00", 3, 6, 0, TYPE_POINTER_TO_SHORT }, // 25.1.5.4976
+
+            { "48 8B 05 ? ? ? ? 48 8B 8D ? ? ? ? 48 8B 89 ? ? ? ? 48 0F BF 89", 3, 6, 0, TYPE_POINTER_TO_SHORT }, // 20.6.2.1549
+        }
+    },
+{
+        "Metronome Toggle",
+        {
+            { "48 8B 05 ? ? ? ? 48 0F B6 10 E8 ? ? ? ? 48 8B 05 ? ? ? ? 48 8B 00 48 8B 88 F8 0C 00 00", 3, 6, 0, TYPE_POINTER_TO_BYTE }, // 21.0.3.3517
+            { "48 8B 0D ? ? ? ? 48 0F B6 09 88 88 88 09 00 00", 3, 6, 0, TYPE_POINTER_TO_BYTE }, // 24.2.2.4597
+
+            { "48 8B 05 ? ? ? ? ? ? ? 0F 84 ? ? ? ? 48 8B 05 ? ? ? ? ? ? 48 8B 05", 3, 6, 0, TYPE_POINTER_TO_BYTE }, // 20.6.2.1549
+        }
+    },
+{
+        "Playing Status",
+        {
+            { "48 8B 0D ? ? ? ? 83 39 ? 0F 94 C1 85 C0", 3, 6, 0, TYPE_POINTER_TO_INT }, // 21.0.3.3517
+            { "83 3D ? ? ? ? ? 74 ? 83 3D ? ? ? ? ? 7F", 2, 7, 0, TYPE_BYTE }, // versions 24 and up
+
+            { "48 8B 05 ? ? ? ? ? ? ? 0F 85 ? ? ? ? 48 8B 05 ? ? ? ? ? ? 48 8B 0D", 3, 6, 0, TYPE_POINTER_TO_INT }, // 20.6.2.1549
+
+        }
+    }
 };
 
 DWORD GetProcId(const wchar_t* name) {
@@ -342,17 +390,19 @@ int main() {
     while (true) {
         for (const auto& p : PatternList) {
             uintptr_t hit = 0;
+            const Signature* matchedSig = nullptr;
 
-            for (const char* sig : p.signatures) {
-                hit = FindPattern(hProc, modBase, modSize, sig);
-                if (hit) break;
+            for (const auto& sig : p.signatures) {
+                hit = FindPattern(hProc, modBase, modSize, sig.pattern);
+                if (hit) {
+                    matchedSig = &sig;
+                    break;
+                }
             }
-
-            if (!hit) continue;
+            if (!hit || !matchedSig) continue;
 
             MemHandle ptr{ hProc, hit };
-            int instrLen = (p.name == "Playing Status") ? 7 : 6;
-            MemHandle resolved = ptr.add(p.ripOffset).rip(instrLen);
+            MemHandle resolved = ptr.add(matchedSig->ripOffset).rip(matchedSig->instrLen).add(matchedSig->postOffset);
 
             if (!printedPatterns[p.name]) {
                 std::cout << "[Memory] Pattern: " << p.name
@@ -361,49 +411,54 @@ int main() {
                 printedPatterns[p.name] = true;
             }
 
-            if (p.type == TYPE_FLOAT) {
+            if (p.name == "Current BPM") {
                 g_bpm = resolved.as<float>();
             }
-            else if (p.type == TYPE_INT) {
-                g_playState = (resolved.as<int>() == 1) ? "Playing" : "Stopped";
-            }
-            else if (p.type == TYPE_POINTER_TO_INT) {
-                auto ptrVal = resolved.as_ptr<int>();
-                if (ptrVal) {
-                    int v{};
-                    if (ReadProcessMemory(hProc, ptrVal, &v, sizeof(v), nullptr))
-                        g_songMode = (v == 1);
+            else if (p.name == "Pattern/Song Toggle") {
+                int val = 0;
+                if (matchedSig->type == TYPE_POINTER_TO_INT) {
+                    auto ptrVal = resolved.as_ptr<int>();
+                    if (ptrVal) ReadProcessMemory(hProc, ptrVal, &val, sizeof(val), nullptr);
                 }
+                g_songMode = (val == 1);
             }
-            else if (p.type == TYPE_POINTER_TO_SHORT) {
-                auto ptrVal = resolved.as_ptr<int16_t>();
-                if (ptrVal) {
-                    int16_t raw{};
-                    if (ReadProcessMemory(hProc, ptrVal, &raw, sizeof(raw), nullptr))
-                        g_masterPitch = static_cast<int>(raw);
+            else if (p.name == "Master Pitch") {
+                int16_t raw = 0;
+                if (matchedSig->type == TYPE_POINTER_TO_SHORT) {
+                    auto ptrVal = resolved.as_ptr<int16_t>();
+                    if (ptrVal) ReadProcessMemory(hProc, ptrVal, &raw, sizeof(raw), nullptr);
                 }
+                g_masterPitch = static_cast<int>(raw);
             }
-            else if (p.type == TYPE_POINTER_TO_BYTE) {
-                auto ptrVal = resolved.as_ptr<unsigned char>();
-                if (ptrVal) {
-                    unsigned char v{};
-                    if (ReadProcessMemory(hProc, ptrVal, &v, sizeof(v), nullptr))
-                        g_metronome = (v != 0);
+            else if (p.name == "Metronome Toggle") {
+                unsigned char val = 0;
+                if (matchedSig->type == TYPE_POINTER_TO_BYTE) {
+                    auto ptrVal = resolved.as_ptr<unsigned char>();
+                    if (ptrVal) ReadProcessMemory(hProc, ptrVal, &val, sizeof(val), nullptr);
                 }
+                g_metronome = (val != 0);
             }
-            else if (p.type == TYPE_BYTE) {
-                g_playState = (resolved.as<uint8_t>() == 1) ? "Playing" : "Stopped";
+            else if (p.name == "Playing Status") {
+                uint8_t val = 0;
+                if (matchedSig->type == TYPE_BYTE) {
+                    val = resolved.as<uint8_t>();
+                }
+                else if (matchedSig->type == TYPE_POINTER_TO_INT) {
+                    int* ptrVal = resolved.as_ptr<int>();
+                    if (ptrVal) ReadProcessMemory(hProc, ptrVal, &val, sizeof(val), nullptr);
+                }
+                g_playState = (val == 1) ? "Playing" : "Stopped";
             }
         }
 
         if (!initialCheckDone) {
-			for (const auto& p : PatternList) {
+            for (const auto& p : PatternList) {
                 if (printedPatterns.find(p.name) == printedPatterns.end()) {
                     std::cout << "WARNING: Pattern '" << p.name << "' was not found. Some features may not work.\n";
                 }
             }
-			initialCheckDone = true;
-		}
+            initialCheckDone = true;
+        }
 
         g_projectName = GetFLStudioProjectName();
 
