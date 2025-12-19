@@ -17,9 +17,20 @@ This tool utilizes **AOB (Array of Bytes) scanning**, allowing it to dynamically
 
 | FL Studio Version | Build Number | Status |
 | :--- | :--- | :--- |
-| **24.2.1** | 4526 | ✅ Confirmed |
-| **24.2.2** | 4597 | ✅ Confirmed |
 | **25.2.2** | 5154 | ✅ Confirmed |
+| **25.1.6** | 4997 | ✅ Confirmed |
+| **25.1.5** | 4976 | ✅ Confirmed |
+| **25.1.1** | 4879 | ✅ Confirmed |
+| **24.2.2** | 4597 | ✅ Confirmed |
+| **24.2.1** | 4526 | ✅ Confirmed |
+| **24.2.0** | 4503 | ✅ Confirmed |
+| **24.1.2** | 4430 | ✅ Confirmed |
+| **21.2.3** | 4004 | ✅ Confirmed |
+| **21.1.1** | 3750 | ✅ Confirmed |
+| **21.0.3** | 3517 | ✅ Confirmed |
+| **20.9.2** | 2963 | ✅ Confirmed |
+| **20.8.4** | 2576 | ✅ Confirmed |
+| **20.6.2** | 1549 | ✅ Confirmed |
 
 > [!IMPORTANT]
 > While the tool is designed to be version-independent, internal memory structures can change. If you encounter issues or incorrect data with a specific build, please **[create an issue](https://github.com/nuiiv/FL-Studio-Discord-RPC/issues)** in this repository.
