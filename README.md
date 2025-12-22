@@ -20,6 +20,7 @@ This tool utilizes **AOB (Array of Bytes) scanning**, allowing it to dynamically
 | **25.2.2** | 5154 | ✅ Confirmed |
 | **25.1.6** | 4997 | ✅ Confirmed |
 | **25.1.5** | 4976 | ✅ Confirmed |
+| **25.1.4** | 4951 | ✅ Confirmed |
 | **25.1.1** | 4879 | ✅ Confirmed |
 | **24.2.2** | 4597 | ✅ Confirmed |
 | **24.2.1** | 4526 | ✅ Confirmed |
