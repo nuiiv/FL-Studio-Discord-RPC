@@ -17,6 +17,7 @@ This tool utilizes **AOB (Array of Bytes) scanning**, allowing it to dynamically
 
 | FL Studio Version | Build Number | Status |
 | :--- | :--- | :--- |
+| **25.2.3** | 5171 | ✅ Confirmed |
 | **25.2.2** | 5154 | ✅ Confirmed |
 | **25.1.6** | 4997 | ✅ Confirmed |
 | **25.1.5** | 4976 | ✅ Confirmed |
@@ -67,3 +68,4 @@ If you prefer not to run the tracker separately, you can enable Discord RPC auto
 >
 > This tool **reads memory from a running FL Studio process**.  
 > Use at your own risk. The author is **not responsible for any crashes, data loss, or other issues** caused by using this tracker.
+
