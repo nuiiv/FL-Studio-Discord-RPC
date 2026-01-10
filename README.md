@@ -69,3 +69,15 @@ If you prefer not to run the tracker separately, you can enable Discord RPC auto
 > This tool **reads memory from a running FL Studio process**.  
 > Use at your own risk. The author is **not responsible for any crashes, data loss, or other issues** caused by using this tracker.
 
+## Acknowledgements
+
+[alessandromrc](https://github.com/alessandromrc) - Helped with RE fundamentals and discovered several memory patterns.
+
+## Third-Party Libraries
+This project is made possible by the following open-source libraries:
+
+| Library | License | Usage |
+| :--- | :--- | :--- |
+| [nlohmann/json](https://github.com/nlohmann/json) | MIT | Configuration file parsing |
+| [Discord-RPC](https://github.com/discord/discord-rpc) | MIT | Communication with Discord client |
+| [MinHook](https://github.com/TsudaKageyu/minhook) | BSD-2-Clause | API Hooking for log interception |
