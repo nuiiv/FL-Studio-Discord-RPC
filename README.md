@@ -2,6 +2,10 @@
 
 A tool for tracking FL Studio project playback status, BPM, pitch, and other metrics in real-time.
 
+## Preview
+
+<img width="468" height="246" alt="Screenshot 2026-01-11 224612" src="https://github.com/user-attachments/assets/d4e70a6c-7adf-4791-bff4-42cbe27669a5" />
+
 ## How It Works
 
 The tracker works by reading FL Studio's memory in real-time to extract information about the current project:
@@ -81,3 +85,4 @@ This project is made possible by the following open-source libraries:
 | [nlohmann/json](https://github.com/nlohmann/json) | MIT | Configuration file parsing |
 | [Discord-RPC](https://github.com/discord/discord-rpc) | MIT | Communication with Discord client |
 | [MinHook](https://github.com/TsudaKageyu/minhook) | BSD-2-Clause | API Hooking for log interception |
+
