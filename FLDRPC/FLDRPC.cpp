@@ -312,7 +312,21 @@ std::string ReplacePlaceholders(const std::string& text) {
         };
 
     replace("{Project}", g_projectName);
-    replace("{BPM}", std::to_string((int)g_bpm));
+
+    {
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(3) << g_bpm;
+        std::string bpmStr = ss.str();
+
+        bpmStr.erase(bpmStr.find_last_not_of('0') + 1);
+
+        if (!bpmStr.empty() && bpmStr.back() == '.') {
+            bpmStr.pop_back();
+        }
+
+        replace("{BPM}", bpmStr);
+    }
+
     replace("{Pitch}", std::to_string(g_masterPitch));
     replace("{Metronome}", g_metronome ? "ON" : "OFF");
     replace("{Mode}", g_songMode ? "Song" : "Pattern");
@@ -356,124 +370,134 @@ int main() {
     const wchar_t* PROCESS_NAME = L"FL64.exe";
     const wchar_t* MODULE_NAME = L"FLEngine_x64.dll";
 
-    DWORD pid = GetProcId(PROCESS_NAME);
-    if (!pid) {
-        std::cout << "Error: FL Studio (FL64.exe) not found. Please open FL Studio first.\n";
-        system("pause");
-        return 1;
-    }
-
-    HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-    if (!hProc) {
-        std::cout << "Error: Could not open process. Try running as Administrator.\n";
-        system("pause");
-        return 1;
-    }
-    DWORD modSize = 0;
-    uintptr_t modBase = GetModuleBase(pid, MODULE_NAME, modSize);
-    if (!modBase) {
-        std::cout << "Error: Could not find FLEngine_x64.dll.\n";
-        system("pause");
-        return 1;
-    }
-
-    std::wcout << L"--- Target: " << PROCESS_NAME
-        << L" (Version: " << GetProcessProductVersion(pid) << L") ---\n\n";
-
-    g_projectName = GetFLStudioProjectName();
-    std::wstring wVer = GetProcessProductVersion(pid);
-    std::string version(wVer.begin(), wVer.end());
-    g_flVersion = "FL Studio v" + version;
-    InitDiscordRPC();
-
-    std::unordered_map<std::string, bool> printedPatterns;
-    bool initialCheckDone = false;
+    std::cout << "Waiting for FL Studio...\n";
 
     while (true) {
-        for (const auto& p : PatternList) {
-            uintptr_t hit = 0;
-            const Signature* matchedSig = nullptr;
-
-            for (const auto& sig : p.signatures) {
-                hit = FindPattern(hProc, modBase, modSize, sig.pattern);
-                if (hit) {
-                    matchedSig = &sig;
-                    break;
-                }
-            }
-            if (!hit || !matchedSig) continue;
-
-            MemHandle ptr{ hProc, hit };
-            MemHandle resolved = ptr.add(matchedSig->ripOffset).rip(matchedSig->instrLen).add(matchedSig->postOffset);
-
-            if (!printedPatterns[p.name]) {
-                std::cout << "[Memory] Pattern: " << p.name
-                    << " | Address: 0x" << std::hex << resolved.addr
-                    << " | Module+Offset: 0x" << (resolved.addr - modBase) << std::dec << "\n";
-                printedPatterns[p.name] = true;
-            }
-
-            if (p.name == "Current BPM") {
-                g_bpm = resolved.as<float>();
-            }
-            else if (p.name == "Pattern/Song Toggle") {
-                int val = 0;
-                if (matchedSig->type == TYPE_POINTER_TO_INT) {
-                    auto ptrVal = resolved.as_ptr<int>();
-                    if (ptrVal) ReadProcessMemory(hProc, ptrVal, &val, sizeof(val), nullptr);
-                }
-                g_songMode = (val == 1);
-            }
-            else if (p.name == "Master Pitch") {
-                int16_t raw = 0;
-                if (matchedSig->type == TYPE_POINTER_TO_SHORT) {
-                    auto ptrVal = resolved.as_ptr<int16_t>();
-                    if (ptrVal) ReadProcessMemory(hProc, ptrVal, &raw, sizeof(raw), nullptr);
-                }
-                g_masterPitch = static_cast<int>(raw);
-            }
-            else if (p.name == "Metronome Toggle") {
-                unsigned char val = 0;
-                if (matchedSig->type == TYPE_POINTER_TO_BYTE) {
-                    auto ptrVal = resolved.as_ptr<unsigned char>();
-                    if (ptrVal) ReadProcessMemory(hProc, ptrVal, &val, sizeof(val), nullptr);
-                }
-                g_metronome = (val != 0);
-            }
-            else if (p.name == "Playing Status") {
-                uint8_t val = 0;
-                if (matchedSig->type == TYPE_BYTE) {
-                    val = resolved.as<uint8_t>();
-                }
-                else if (matchedSig->type == TYPE_POINTER_TO_INT) {
-                    int* ptrVal = resolved.as_ptr<int>();
-                    if (ptrVal) ReadProcessMemory(hProc, ptrVal, &val, sizeof(val), nullptr);
-                }
-                g_playState = (val == 1) ? "Playing" : "Stopped";
-            }
+        DWORD pid = 0;
+        while ((pid = GetProcId(PROCESS_NAME)) == 0) {
+            std::this_thread::sleep_for(std::chrono::seconds(2));
         }
 
-        if (!initialCheckDone) {
-            for (const auto& p : PatternList) {
-                if (printedPatterns.find(p.name) == printedPatterns.end()) {
-                    std::cout << "WARNING: Pattern '" << p.name << "' was not found. Some features may not work.\n";
-                }
-            }
-            initialCheckDone = true;
+        std::cout << "FL Studio found. Attaching...\n";
+
+        HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+        if (!hProc) {
+            std::cout << "Failed to open process. Retrying...\n";
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            continue;
         }
+
+        DWORD modSize = 0;
+        uintptr_t modBase = GetModuleBase(pid, MODULE_NAME, modSize);
+        if (!modBase) {
+            std::cout << "Failed to find FLEngine_x64.dll. Retrying...\n";
+            CloseHandle(hProc);
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            continue;
+        }
+
+        std::wstring wVer = GetProcessProductVersion(pid);
+        std::string version(wVer.begin(), wVer.end());
+        g_flVersion = "FL Studio v" + version;
 
         g_projectName = GetFLStudioProjectName();
+        InitDiscordRPC();
 
-        UpdateDiscordRPC();
-        Discord_RunCallbacks();
+        std::wcout << L"--- Target: " << PROCESS_NAME << L" (Version: " << GetProcessProductVersion(pid) << L") ---\n\n";
 
-        std::this_thread::sleep_for(std::chrono::seconds(g_config.refreshInterval));
+        std::unordered_map<std::string, bool> printedPatterns;
+        bool initialCheckDone = false;
 
-        if (GetProcId(PROCESS_NAME) == 0) {
-            break;
+        while (GetProcId(PROCESS_NAME) != 0) {
+            for (const auto& p : PatternList) {
+                uintptr_t hit = 0;
+                const Signature* matchedSig = nullptr;
+
+                for (const auto& sig : p.signatures) {
+                    hit = FindPattern(hProc, modBase, modSize, sig.pattern);
+                    if (hit) {
+                        matchedSig = &sig;
+                        break;
+                    }
+                }
+                if (!hit || !matchedSig) continue;
+
+                MemHandle ptr{ hProc, hit };
+                MemHandle resolved =
+                    ptr.add(matchedSig->ripOffset)
+                    .rip(matchedSig->instrLen)
+                    .add(matchedSig->postOffset);
+
+                if (!printedPatterns[p.name]) {
+                    std::cout << "[Memory] Pattern: " << p.name
+                        << " | Address: 0x" << std::hex << resolved.addr
+                        << " | Module+Offset: 0x" << (resolved.addr - modBase)
+                        << std::dec << "\n";
+                    printedPatterns[p.name] = true;
+                }
+
+                if (p.name == "Current BPM") {
+                    g_bpm = resolved.as<float>();
+                }
+                else if (p.name == "Pattern/Song Toggle") {
+                    int val = 0;
+                    if (matchedSig->type == TYPE_POINTER_TO_INT) {
+                        auto ptrVal = resolved.as_ptr<int>();
+                        if (ptrVal) ReadProcessMemory(hProc, ptrVal, &val, sizeof(val), nullptr);
+                    }
+                    g_songMode = (val == 1);
+                }
+                else if (p.name == "Master Pitch") {
+                    int16_t raw = 0;
+                    if (matchedSig->type == TYPE_POINTER_TO_SHORT) {
+                        auto ptrVal = resolved.as_ptr<int16_t>();
+                        if (ptrVal) ReadProcessMemory(hProc, ptrVal, &raw, sizeof(raw), nullptr);
+                    }
+                    g_masterPitch = static_cast<int>(raw);
+                }
+                else if (p.name == "Metronome Toggle") {
+                    unsigned char val = 0;
+                    if (matchedSig->type == TYPE_POINTER_TO_BYTE) {
+                        auto ptrVal = resolved.as_ptr<unsigned char>();
+                        if (ptrVal) ReadProcessMemory(hProc, ptrVal, &val, sizeof(val), nullptr);
+                    }
+                    g_metronome = (val != 0);
+                }
+                else if (p.name == "Playing Status") {
+                    uint8_t val = 0;
+                    if (matchedSig->type == TYPE_BYTE) {
+                        val = resolved.as<uint8_t>();
+                    }
+                    else if (matchedSig->type == TYPE_POINTER_TO_INT) {
+                        int* ptrVal = resolved.as_ptr<int>();
+                        if (ptrVal) ReadProcessMemory(hProc, ptrVal, &val, sizeof(val), nullptr);
+                    }
+                    g_playState = (val == 1) ? "Playing" : "Stopped";
+                }
+            }
+
+            if (!initialCheckDone) {
+                for (const auto& p : PatternList) {
+                    if (!printedPatterns[p.name]) {
+                        std::cout << "WARNING: Pattern '" << p.name
+                            << "' was not found. Some features may not work.\n";
+                    }
+                }
+                initialCheckDone = true;
+            }
+
+            g_projectName = GetFLStudioProjectName();
+
+            UpdateDiscordRPC();
+            Discord_RunCallbacks();
+
+            std::this_thread::sleep_for(
+                std::chrono::seconds(g_config.refreshInterval)
+            );
         }
-    }
 
-    ShutdownDiscordRPC();
-    return 0;
+        std::cout << "FL Studio closed. Waiting for relaunch...\n";
+        ShutdownDiscordRPC();
+        CloseHandle(hProc);
+    }
 }
