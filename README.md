@@ -21,6 +21,7 @@ This tool utilizes **AOB (Array of Bytes) scanning**, allowing it to dynamically
 
 | FL Studio Version | Build Number | Status |
 | :--- | :--- | :--- |
+| **25.2.4** | 5242 | ✅ Confirmed |
 | **25.2.3** | 5171 | ✅ Confirmed |
 | **25.2.2** | 5154 | ✅ Confirmed |
 | **25.1.6** | 4997 | ✅ Confirmed |
@@ -85,4 +86,5 @@ This project is made possible by the following open-source libraries:
 | [nlohmann/json](https://github.com/nlohmann/json) | MIT | Configuration file parsing |
 | [Discord-RPC](https://github.com/discord/discord-rpc) | MIT | Communication with Discord client |
 | [MinHook](https://github.com/TsudaKageyu/minhook) | BSD-2-Clause | API Hooking for log interception |
+
 
