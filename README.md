@@ -21,6 +21,7 @@ This tool utilizes **AOB (Array of Bytes) scanning**, allowing it to dynamically
 
 | FL Studio Version | Build Number | Status |
 | :--- | :--- | :--- |
+| **25.2.5** | 5319 | ✅ Confirmed |
 | **25.2.4** | 5242 | ✅ Confirmed |
 | **25.2.3** | 5171 | ✅ Confirmed |
 | **25.2.2** | 5154 | ✅ Confirmed |
